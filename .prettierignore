@@ -1,0 +1,9 @@
+node_modules
+.next
+src/generated
+package-lock.json
+prisma/migrations
+# Shared planning documents are maintained separately from application formatting.
+INTEGRATION.md
+TEAMMATE_1_FRONTEND.md
+TEAMMATE_2_BACKEND.md

@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Classification {
+  INCLUDED
+  ADDITIONAL
+  UNCLEAR
+}
+
+enum ProposalStatus {
+  DRAFT
+  APPROVED
+  ACCEPTED
+}
+
+enum InvoiceStatus {
+  CREATING
+  PENDING
+  PAID
+  CANCELLED
+  ERROR
+}
+
+enum Currency {
+  USD
+}
+
+model Project {
+  id              String     @id @default(cuid())
+  title           String
+  clientName      String
+  scopeText       String     @db.Text
+  hourlyRateCents  Int
+  currency        Currency   @default(USD)
+  createdAt       DateTime   @default(now())
+  analyses        Analysis[]
+  proposals       Proposal[]
+}
+
+model Analysis {
+  id               String     @id @default(cuid())
+  projectId        String
+  project          Project    @relation(fields: [projectId], references: [id])
+  conversationText String     @db.Text
+  createdAt        DateTime   @default(now())
+  findings         Finding[]
+  proposals        Proposal[]
+
+  @@unique([id, projectId])
+  @@index([projectId])
+}
+
+model Finding {
+  id                    String         @id @default(cuid())
+  analysisId            String
+  analysis              Analysis       @relation(fields: [analysisId], references: [id])
+  classification        Classification
+  title                 String
+  explanation           String         @db.Text
+  scopeQuote            String?        @db.Text
+  requestQuote          String         @db.Text
+  clarificationQuestion String?
+  proposals             Proposal[]
+
+  @@index([analysisId])
+}
+
+model Proposal {
+  id              String         @id @default(cuid())
+  projectId       String
+  project         Project        @relation(fields: [projectId], references: [id])
+  analysisId      String
+  analysis        Analysis       @relation(fields: [analysisId, projectId], references: [id, projectId])
+  findings        Finding[]
+  title           String
+  items           ProposalItem[]
+  totalCents      Int
+  currency        Currency       @default(USD)
+  status          ProposalStatus @default(DRAFT)
+  approvedAt      DateTime?
+  acceptedAt      DateTime?
+  clientTokenHash String?        @unique
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  invoice         Invoice?
+
+  @@index([projectId])
+  @@index([analysisId, projectId])
+}
+
+model ProposalItem {
+  id               String   @id @default(cuid())
+  proposalId       String
+  proposal         Proposal @relation(fields: [proposalId], references: [id])
+  position         Int
+  description      String
+  estimatedMinutes Int
+  hourlyRateCents  Int
+  amountCents      Int
+
+  @@unique([proposalId, position])
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  proposalId        String        @unique
+  proposal          Proposal      @relation(fields: [proposalId], references: [id])
+  idempotencyKey    String        @unique
+  providerInvoiceId String?       @unique
+  paymentUrl        String?
+  buyerEmail        String
+  status            InvoiceStatus @default(CREATING)
+  totalCents        Int
+  currency          Currency      @default(USD)
+  paidAt            DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  lastReconciledAt   DateTime?
+}
