@@ -1,6 +1,10 @@
-import { MockModeBanner, WorkspaceHeader } from '@/components/app-chrome';
+import { MockModeBanner, WorkspaceHeader } from "@/components/app-chrome";
 
-export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
+export default function WorkspaceLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen">
       <a
@@ -11,7 +15,7 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
       </a>
       <MockModeBanner />
       <WorkspaceHeader />
-      <main id="main" className="mx-auto max-w-5xl px-4 py-8">
+      <main id="main" className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-10">
         {children}
       </main>
     </div>

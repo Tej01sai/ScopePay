@@ -1,14 +1,22 @@
-import type { Metadata } from 'next';
-import { DemoLabel, MockModeBanner, SandboxLabel } from '@/components/app-chrome';
+import type { Metadata } from "next";
+import {
+  DemoLabel,
+  MockModeBanner,
+  SandboxLabel,
+} from "@/components/app-chrome";
 
 // The client token lives in the URL fragment; never leak the page URL onward.
 export const metadata: Metadata = {
-  title: 'Review change request · ScopePay (demo)',
-  referrer: 'no-referrer',
+  title: "Review change request · ScopePay (demo)",
+  referrer: "no-referrer",
   robots: { index: false, follow: false },
 };
 
-export default function ApproveLayout({ children }: { children: React.ReactNode }) {
+export default function ApproveLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
     <div className="min-h-screen">
       <MockModeBanner />

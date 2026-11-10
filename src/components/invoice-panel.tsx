@@ -1,13 +1,19 @@
-'use client';
+"use client";
 
-import { useCallback, useState, type FormEvent } from 'react';
-import type { Invoice, Proposal } from '@/shared/contracts';
-import { api, isMockMode } from '@/lib/api-client';
-import { mockTriggers } from '@/mocks/fixtures';
-import { Button, ErrorNotice, InputField } from './ui';
-import { PaymentStatus, isSettled } from './payment-status';
-import { useAuthRedirect, useBoundedPolling, useDraft, useSubmit } from './utils/hooks';
-import { formatCents } from './utils/money';
+import { useCallback, useState, type FormEvent } from "react";
+import type { Invoice, Proposal } from "@/shared/contracts";
+import { api, isMockMode, type ApiError } from "@/lib/api-client";
+import { mockTriggers } from "@/mocks/fixtures";
+import { Button, ErrorNotice, InputField } from "./ui";
+import { PaymentStatus, isSettled } from "./payment-status";
+import {
+  useAuthRedirect,
+  useBoundedPolling,
+  useDraft,
+  useSubmit,
+  toApiError,
+} from "./utils/hooks";
+import { formatCents } from "./utils/money";
 
 /**
  * One Idempotency-Key per proposal, kept until an invoice comes back, so a
@@ -46,6 +52,8 @@ export function InvoicePanel({
 }) {
   const [buyerEmail, setBuyerEmail] = useDraft(`buyerEmail.${proposal.id}`);
   const [emailError, setEmailError] = useState<string>();
+  const [checkError, setCheckError] = useState<ApiError | null>(null);
+  useAuthRedirect(checkError);
 
   const create = useSubmit(async () => {
     const created = await api.createInvoice(
@@ -62,20 +70,23 @@ export function InvoicePanel({
     try {
       const latest = await api.getInvoice(proposal.id);
       if (latest) onInvoice(latest);
-    } catch {
-      // A failed check is retried on the next tick or by Refresh status.
+      setCheckError(null);
+    } catch (error) {
+      setCheckError(toApiError(error));
     }
   }, [proposal.id, onInvoice]);
 
   const poll = useBoundedPolling(
     check,
-    !!invoice && !isSettled(invoice) && invoice.status !== 'ERROR',
+    !!invoice && !isSettled(invoice) && invoice.status !== "ERROR",
   );
 
   function onSubmit(e: FormEvent) {
     e.preventDefault();
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail.trim())) {
-      setEmailError('Enter the email address of the client’s PayPal sandbox buyer account.');
+      setEmailError(
+        "Enter the email address of the client’s PayPal sandbox buyer account.",
+      );
       return;
     }
     setEmailError(undefined);
@@ -83,15 +94,28 @@ export function InvoicePanel({
   }
 
   if (invoice) {
-    return <PaymentStatus invoice={invoice} poll={poll} payLabel="Open PayPal invoice" />;
+    return (
+      <div className="flex flex-col gap-3">
+        <ErrorNotice error={checkError} />
+        <PaymentStatus
+          invoice={invoice}
+          poll={poll}
+          payLabel="Open PayPal invoice"
+        />
+      </div>
+    );
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-4">
+    <form
+      onSubmit={onSubmit}
+      noValidate
+      className="flex flex-col gap-3 rounded-md border border-slate-200 bg-slate-50 p-4"
+    >
       <p className="text-sm text-slate-800">
-        The client accepted. Create a PayPal sandbox invoice for the approved{' '}
-        <strong>{formatCents(proposal.totalCents)}</strong>. The amount comes from the stored
-        proposal, not from this page.
+        The client accepted. Create a PayPal sandbox invoice for the approved{" "}
+        <strong>{formatCents(proposal.totalCents)}</strong>. The amount comes
+        from the stored proposal, not from this page.
       </p>
       <InputField
         label="Client’s email for the invoice"
@@ -103,16 +127,26 @@ export function InvoicePanel({
         hint={
           isMockMode
             ? `Mock: use ${mockTriggers.providerErrorEmail} to simulate a PayPal failure.`
-            : 'Use a PayPal sandbox buyer account email.'
+            : "Use a PayPal sandbox buyer account email."
         }
       />
       <ErrorNotice
         error={create.error?.status === 401 ? null : create.error}
-        onRetry={create.error?.status === 409 || create.error?.status === 502 || create.error?.status === 0 ? () => void create.run() : undefined}
+        onRetry={
+          create.error?.status === 409 ||
+          create.error?.status === 502 ||
+          create.error?.status === 0
+            ? () => void create.run()
+            : undefined
+        }
         retryPending={create.pending}
       />
       <div>
-        <Button type="submit" pending={create.pending} pendingLabel="Creating invoice…">
+        <Button
+          type="submit"
+          pending={create.pending}
+          pendingLabel="Creating invoice…"
+        >
           Create PayPal invoice
         </Button>
       </div>

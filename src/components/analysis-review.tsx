@@ -1,20 +1,38 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import type { Analysis, Classification, Finding, Project, Proposal } from '@/shared/contracts';
-import { api } from '@/lib/api-client';
-import { demoEstimate } from '@/mocks/fixtures';
-import { Badge, Button, Card, Quote } from './ui';
-import { ProposalForm, type ProposalFormValues } from './proposal-form';
-import { useAuthRedirect, useSubmit } from './utils/hooks';
+import { useState } from "react";
+import type {
+  Analysis,
+  Classification,
+  Finding,
+  Project,
+  Proposal,
+} from "@/shared/contracts";
+import { api } from "@/lib/api-client";
+import { demoEstimate } from "@/mocks/fixtures";
+import { Badge, Button, Card, Quote } from "./ui";
+import { ProposalForm, type ProposalFormValues } from "./proposal-form";
+import { useAuthRedirect, useSubmit } from "./utils/hooks";
 
 const classificationUi: Record<
   Classification,
-  { label: string; tone: 'green' | 'indigo' | 'amber'; summary: string }
+  { label: string; tone: "green" | "indigo" | "amber"; summary: string }
 > = {
-  INCLUDED: { label: 'Included', tone: 'green', summary: 'Covered by the agreed scope. No extra charge.' },
-  ADDITIONAL: { label: 'Additional', tone: 'indigo', summary: 'Outside the agreed scope. Can be quoted.' },
-  UNCLEAR: { label: 'Unclear', tone: 'amber', summary: 'Needs clarification before it can be quoted.' },
+  INCLUDED: {
+    label: "Included",
+    tone: "green",
+    summary: "Covered by the agreed scope. No extra charge.",
+  },
+  ADDITIONAL: {
+    label: "Additional",
+    tone: "indigo",
+    summary: "Outside the agreed scope. Can be quoted.",
+  },
+  UNCLEAR: {
+    label: "Unclear",
+    tone: "amber",
+    summary: "Needs clarification before it can be quoted.",
+  },
 };
 
 export function AnalysisReview({
@@ -40,7 +58,9 @@ export function AnalysisReview({
     (acc, f) => ({ ...acc, [f.classification]: acc[f.classification] + 1 }),
     { INCLUDED: 0, ADDITIONAL: 0, UNCLEAR: 0 },
   );
-  const selectedFindings = analysis.findings.filter((f) => selected.includes(f.id));
+  const selectedFindings = analysis.findings.filter((f) =>
+    selected.includes(f.id),
+  );
 
   const create = useSubmit(async (values: ProposalFormValues) => {
     const proposal = await api.createProposal(project.id, {
@@ -55,26 +75,33 @@ export function AnalysisReview({
   useAuthRedirect(create.error);
 
   const toggle = (id: string) =>
-    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : [...s, id]));
+    setSelected((s) =>
+      s.includes(id) ? s.filter((x) => x !== id) : [...s, id],
+    );
 
   return (
     <Card>
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <h3 className="font-semibold">Analysis {index}</h3>
         <p className="text-sm text-slate-700">
-          {counts.ADDITIONAL} additional · {counts.INCLUDED} included · {counts.UNCLEAR} unclear
+          {counts.ADDITIONAL} additional · {counts.INCLUDED} included ·{" "}
+          {counts.UNCLEAR} unclear
         </p>
       </div>
 
       <details className="mt-2 text-sm">
-        <summary className="cursor-pointer text-indigo-800">Conversation analyzed</summary>
+        <summary className="cursor-pointer text-blue-800">
+          Conversation analyzed
+        </summary>
         <p className="mt-2 whitespace-pre-wrap rounded bg-slate-50 p-3 text-slate-800">
           {analysis.conversationText}
         </p>
       </details>
 
       {analysis.findings.length === 0 ? (
-        <p className="mt-4 text-sm text-slate-700">No requests were found in this conversation.</p>
+        <p className="mt-4 text-sm text-slate-700">
+          No requests were found in this conversation.
+        </p>
       ) : (
         <ul className="mt-4 flex flex-col gap-3">
           {analysis.findings.map((f) => (
@@ -93,10 +120,13 @@ export function AnalysisReview({
       {counts.UNCLEAR > 0 && (
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-md bg-amber-50 p-3 text-sm text-amber-950">
           <p>
-            Unclear requests cannot be quoted. Ask the client the clarification question, add their
-            answer to the conversation, and analyze again.
+            Unclear requests cannot be quoted. Ask the client the clarification
+            question, add their answer to the conversation, and analyze again.
           </p>
-          <Button variant="secondary" onClick={() => onReviseConversation(analysis.conversationText)}>
+          <Button
+            variant="secondary"
+            onClick={() => onReviseConversation(analysis.conversationText)}
+          >
             Revise conversation
           </Button>
         </div>
@@ -106,8 +136,8 @@ export function AnalysisReview({
         <div className="mt-4 flex flex-wrap items-center justify-end gap-3">
           <p className="text-sm text-slate-700" aria-live="polite">
             {selected.length
-              ? `${selected.length} additional request${selected.length > 1 ? 's' : ''} selected`
-              : 'Select additional requests to quote'}
+              ? `${selected.length} additional request${selected.length > 1 ? "s" : ""} selected`
+              : "Select additional requests to quote"}
           </p>
           <Button disabled={!selected.length} onClick={() => setDrafting(true)}>
             Draft change proposal
@@ -138,7 +168,8 @@ export function AnalysisReview({
             onCancel={() => setDrafting(false)}
           />
           <p className="mt-3 text-xs text-slate-600">
-            Synthetic demo: the fixture estimate is {demoEstimate.minutes} minutes at $50/hour.
+            Synthetic demo: the fixture estimate is {demoEstimate.minutes}{" "}
+            minutes at $50/hour.
           </p>
         </div>
       )}
@@ -160,11 +191,11 @@ function FindingItem({
   disabled: boolean;
 }) {
   const ui = classificationUi[finding.classification];
-  const selectable = finding.classification === 'ADDITIONAL';
+  const selectable = finding.classification === "ADDITIONAL";
   const checkboxId = `select-${finding.id}`;
   return (
     <li
-      className={`rounded-md border p-4 ${selected ? 'border-indigo-500 ring-1 ring-indigo-500' : 'border-slate-200'}`}
+      className={`rounded-md border p-4 ${selected ? "border-blue-500 ring-1 ring-blue-500" : "border-slate-200"}`}
     >
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex items-start gap-3">
@@ -172,7 +203,7 @@ function FindingItem({
             <input
               id={checkboxId}
               type="checkbox"
-              className="mt-1 size-4 accent-indigo-700"
+              className="mt-1 size-4 accent-blue-700"
               checked={selected}
               onChange={onToggle}
               disabled={disabled}
@@ -180,7 +211,10 @@ function FindingItem({
             />
           )}
           <div>
-            <label htmlFor={selectable ? checkboxId : undefined} className="font-medium text-slate-900">
+            <label
+              htmlFor={selectable ? checkboxId : undefined}
+              className="font-medium text-slate-900"
+            >
               {finding.title}
             </label>
             <p id={`${checkboxId}-summary`} className="text-sm text-slate-700">

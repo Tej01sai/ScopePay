@@ -4,6 +4,6 @@ src/generated
 package-lock.json
 prisma/migrations
 # Shared planning documents are maintained separately from application formatting.
-INTEGRATION.md
-TEAMMATE_1_FRONTEND.md
-TEAMMATE_2_BACKEND.md
+docs/INTEGRATION.md
+docs/TEAMMATE_1_FRONTEND.md
+docs/TEAMMATE_2_BACKEND.md

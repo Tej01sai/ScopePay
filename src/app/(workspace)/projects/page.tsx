@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { api } from '@/lib/api-client';
-import type { Project } from '@/shared/contracts';
-import { CreateProjectForm } from '@/components/create-project-form';
-import { ProjectList } from '@/components/project-list';
-import { Button, ErrorNotice } from '@/components/ui';
-import { useAuthRedirect, useSubmit } from '@/components/utils/hooks';
+import { useCallback, useEffect, useState } from "react";
+import { api } from "@/lib/api-client";
+import type { Project } from "@/shared/contracts";
+import { CreateProjectForm } from "@/components/create-project-form";
+import { ProjectList } from "@/components/project-list";
+import { Button, ErrorNotice } from "@/components/ui";
+import { useAuthRedirect, useSubmit } from "@/components/utils/hooks";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[] | null>(null);
@@ -28,13 +28,18 @@ export default function ProjectsPage() {
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
+          <p className="mb-2 text-xs font-bold uppercase tracking-widest text-blue-700">
+            Your freelance workspace
+          </p>
+          <h1 className="text-3xl font-bold">A clear scope. A fair payment.</h1>
           <p className="text-sm text-slate-700">
-            Check new client requests against the scope you agreed, then quote and invoice the
-            extra work.
+            Keep your agreements, client decisions, and PayPal sandbox payments
+            in one place.
           </p>
         </div>
-        {!creating && <Button onClick={() => setCreating(true)}>New project</Button>}
+        {!creating && (
+          <Button onClick={() => setCreating(true)}>New project</Button>
+        )}
       </div>
 
       {creating && (
@@ -48,7 +53,11 @@ export default function ProjectsPage() {
       )}
 
       {load.error && load.error.status !== 401 ? (
-        <ErrorNotice error={load.error} onRetry={() => void loadProjects()} retryPending={load.pending} />
+        <ErrorNotice
+          error={load.error}
+          onRetry={() => void loadProjects()}
+          retryPending={load.pending}
+        />
       ) : projects === null ? (
         <p className="text-sm text-slate-600" role="status">
           Loading projects…

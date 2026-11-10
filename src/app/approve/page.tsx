@@ -1,30 +1,41 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useState } from 'react';
-import { api, type ClientProposalView } from '@/lib/api-client';
-import { Button, Card, ErrorNotice, Notice } from '@/components/ui';
-import { LineItems } from '@/components/proposal-card';
-import { PaymentStatus, isSettled } from '@/components/payment-status';
-import { useBoundedPolling, useSubmit } from '@/components/utils/hooks';
-import { formatCents, formatDateTime } from '@/components/utils/money';
+import { useCallback, useEffect, useState } from "react";
+import { api, type ApiError, type ClientProposalView } from "@/lib/api-client";
+import { Button, Card, ErrorNotice, Notice } from "@/components/ui";
+import { LineItems } from "@/components/proposal-card";
+import { PaymentStatus, isSettled } from "@/components/payment-status";
+import {
+  toApiError,
+  useBoundedPolling,
+  useSubmit,
+} from "@/components/utils/hooks";
+import { formatCents, formatDateTime } from "@/components/utils/money";
 
 /** Reads the opaque client token from `#token=…`; it is never sent anywhere but our API. */
 function readToken(): string | null {
-  const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-  return params.get('token');
+  const params = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  return params.get("token");
 }
 
 export default function ApprovePage() {
   const [token, setToken] = useState<string | null | undefined>(undefined);
-  const [view, setView] = useState<ClientProposalView | null>(null);
-  const [agreed, setAgreed] = useState(false);
 
   useEffect(() => {
     const sync = () => setToken(readToken());
     sync();
-    window.addEventListener('hashchange', sync);
-    return () => window.removeEventListener('hashchange', sync);
+    window.addEventListener("hashchange", sync);
+    return () => window.removeEventListener("hashchange", sync);
   }, []);
+
+  if (token === undefined) return null;
+  return <ProposalReview key={token ?? "missing"} token={token} />;
+}
+
+function ProposalReview({ token }: { token: string | null }) {
+  const [view, setView] = useState<ClientProposalView | null>(null);
+  const [agreed, setAgreed] = useState(false);
+  const [checkError, setCheckError] = useState<ApiError | null>(null);
 
   const load = useSubmit(
     useCallback(async () => {
@@ -45,14 +56,18 @@ export default function ApprovePage() {
     if (!token) return;
     try {
       setView(await api.getClientProposal(token));
-    } catch {
-      // Retried on the next tick or by Refresh status.
+      setCheckError(null);
+    } catch (error) {
+      setCheckError(toApiError(error));
     }
   }, [token]);
   // After acceptance, watch for the freelancer's invoice and then its payment.
   const poll = useBoundedPolling(
     check,
-    !!view && view.proposal.status === 'ACCEPTED' && !isSettled(view.invoice) && view.invoice?.status !== 'ERROR',
+    !!view &&
+      view.proposal.status === "ACCEPTED" &&
+      !isSettled(view.invoice) &&
+      view.invoice?.status !== "ERROR",
     { intervalMs: 5_000, maxChecks: 24 },
   );
 
@@ -63,8 +78,8 @@ export default function ApprovePage() {
       <Card>
         <h1 className="text-xl font-bold">Approval link incomplete</h1>
         <p className="mt-2 text-sm text-slate-700">
-          This page needs the full link your freelancer sent you. Open that link again, or ask them
-          to resend it.
+          This page needs the full link your freelancer sent you. Open that link
+          again, or ask them to resend it.
         </p>
       </Card>
     );
@@ -75,14 +90,20 @@ export default function ApprovePage() {
       return (
         <Card>
           <h1 className="text-xl font-bold">
-            {load.error.status === 401 || load.error.status === 403 || load.error.status === 404
-              ? 'This link is not valid'
-              : 'Could not load the change request'}
+            {load.error.status === 401 ||
+            load.error.status === 403 ||
+            load.error.status === 404
+              ? "This link is not valid"
+              : "Could not load the change request"}
           </h1>
           <div className="mt-3">
             <ErrorNotice
               error={load.error}
-              onRetry={load.error.status >= 500 || load.error.status === 0 ? () => void reload() : undefined}
+              onRetry={
+                load.error.status >= 500 || load.error.status === 0
+                  ? () => void reload()
+                  : undefined
+              }
               retryPending={load.pending}
             />
           </div>
@@ -101,20 +122,22 @@ export default function ApprovePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <p className="text-sm text-slate-700">Change request for {projectTitle}</p>
+        <p className="text-sm text-slate-700">
+          Change request for {projectTitle}
+        </p>
         <h1 className="text-2xl font-bold">{proposal.title}</h1>
       </div>
 
       <Card>
         <h2 className="sr-only">Agreed change</h2>
         <p className="mb-4 text-sm text-slate-800">
-          Your freelancer has reviewed your recent requests and quoted the work below as additional
-          to the original agreement.
+          Your freelancer has reviewed your recent requests and quoted the work
+          below as additional to the original agreement.
         </p>
         <LineItems proposal={proposal} />
       </Card>
 
-      {proposal.status === 'APPROVED' && (
+      {proposal.status === "APPROVED" && (
         <Card>
           <h2 className="text-lg font-semibold">Accept this change</h2>
           <label className="mt-3 flex items-start gap-2 text-sm text-slate-900">
@@ -124,8 +147,9 @@ export default function ApprovePage() {
               checked={agreed}
               onChange={(e) => setAgreed(e.target.checked)}
             />
-            I agree to this additional work for {formatCents(proposal.totalCents)} USD. I will
-            receive a separate PayPal invoice.
+            I agree to this additional work for{" "}
+            {formatCents(proposal.totalCents)} USD. I will receive a separate
+            PayPal invoice.
           </label>
           <div className="mt-3">
             <ErrorNotice error={accept.error} />
@@ -140,24 +164,42 @@ export default function ApprovePage() {
             Accept {formatCents(proposal.totalCents)}
           </Button>
           <p className="mt-3 text-xs text-slate-600">
-            Accepting does not charge you. An invoice is a payment request, not escrow.
+            Accepting does not charge you. An invoice is a payment request, not
+            escrow.
           </p>
         </Card>
       )}
 
-      {proposal.status === 'ACCEPTED' && (
+      {proposal.status === "ACCEPTED" && (
         <Card>
           <h2 className="text-lg font-semibold">Payment</h2>
+          <ErrorNotice error={checkError} />
           <Notice tone="success">
-            You accepted this change{proposal.acceptedAt ? ` on ${formatDateTime(proposal.acceptedAt)}` : ''}.
+            You accepted this change
+            {proposal.acceptedAt
+              ? ` on ${formatDateTime(proposal.acceptedAt)}`
+              : ""}
+            .
           </Notice>
           <div className="mt-4">
             {invoice ? (
-              <PaymentStatus invoice={invoice} poll={poll} payLabel="Pay with PayPal (sandbox)" />
+              <PaymentStatus
+                invoice={invoice}
+                poll={poll}
+                payLabel="Pay with PayPal (sandbox)"
+              />
             ) : (
               <div className="flex flex-wrap items-center gap-3 text-sm text-slate-800">
-                <span>Your freelancer has not sent the invoice yet. This page will show it when they do.</span>
-                <Button variant="secondary" onClick={() => void poll.refresh()} pending={poll.checking} pendingLabel="Checking…">
+                <span>
+                  Your freelancer has not sent the invoice yet. This page will
+                  show it when they do.
+                </span>
+                <Button
+                  variant="secondary"
+                  onClick={() => void poll.refresh()}
+                  pending={poll.checking}
+                  pendingLabel="Checking…"
+                >
                   Check again
                 </Button>
               </div>
@@ -166,8 +208,10 @@ export default function ApprovePage() {
         </Card>
       )}
 
-      {proposal.status === 'DRAFT' && (
-        <Notice tone="warning">This change request is not ready for review yet.</Notice>
+      {proposal.status === "DRAFT" && (
+        <Notice tone="warning">
+          This change request is not ready for review yet.
+        </Notice>
       )}
     </div>
   );

@@ -7,6 +7,12 @@ datasource db {
   provider = "postgresql"
 }
 
+model AnalysisBudget {
+  id          String   @id
+  windowStart DateTime
+  count       Int
+}
+
 enum Classification {
   INCLUDED
   ADDITIONAL

@@ -1,12 +1,12 @@
-'use client';
+"use client";
 
-import { useState, type FormEvent } from 'react';
-import { api } from '@/lib/api-client';
-import type { Project } from '@/shared/contracts';
-import { demoProject } from '@/mocks/fixtures';
-import { Button, Card, ErrorNotice, InputField, TextAreaField } from './ui';
-import { useAuthRedirect, useDraft, useSubmit } from './utils/hooks';
-import { parseDollarsToCents } from './utils/money';
+import { useState, type FormEvent } from "react";
+import { api } from "@/lib/api-client";
+import type { Project } from "@/shared/contracts";
+import { demoProject } from "@/mocks/fixtures";
+import { Button, Card, ErrorNotice, InputField, TextAreaField } from "./ui";
+import { useAuthRedirect, useDraft, useSubmit } from "./utils/hooks";
+import { parseDollarsToCents } from "./utils/money";
 
 export function CreateProjectForm({
   onCreated,
@@ -15,10 +15,10 @@ export function CreateProjectForm({
   onCreated: (project: Project) => void;
   onCancel: () => void;
 }) {
-  const [title, setTitle] = useDraft('newProject.title');
-  const [clientName, setClientName] = useDraft('newProject.client');
-  const [scopeText, setScopeText] = useDraft('newProject.scope');
-  const [rate, setRate] = useDraft('newProject.rate');
+  const [title, setTitle] = useDraft("newProject.title");
+  const [clientName, setClientName] = useDraft("newProject.client");
+  const [scopeText, setScopeText] = useDraft("newProject.scope");
+  const [rate, setRate] = useDraft("newProject.rate");
   const [rateError, setRateError] = useState<string>();
 
   const submit = useSubmit(async () => {
@@ -27,9 +27,10 @@ export function CreateProjectForm({
       clientName: clientName.trim(),
       scopeText: scopeText.trim(),
       hourlyRateCents: parseDollarsToCents(rate)!,
-      currency: 'USD',
+      currency: "USD",
     });
-    for (const clear of [setTitle, setClientName, setScopeText, setRate]) clear('');
+    for (const clear of [setTitle, setClientName, setScopeText, setRate])
+      clear("");
     onCreated(project);
   });
   useAuthRedirect(submit.error);
@@ -38,7 +39,7 @@ export function CreateProjectForm({
     e.preventDefault();
     const cents = parseDollarsToCents(rate);
     if (cents === null || cents <= 0) {
-      setRateError('Enter an hourly rate in US dollars, like 50 or 62.50.');
+      setRateError("Enter an hourly rate in US dollars, like 50 or 62.50.");
       return;
     }
     setRateError(undefined);
@@ -62,7 +63,11 @@ export function CreateProjectForm({
           Use synthetic demo fixture
         </Button>
       </div>
-      <form onSubmit={onSubmit} className="mt-4 grid gap-4 sm:grid-cols-2" noValidate>
+      <form
+        onSubmit={onSubmit}
+        className="mt-4 grid gap-4 sm:grid-cols-2"
+        noValidate
+      >
         <InputField
           label="Project title"
           value={title}
@@ -101,12 +106,18 @@ export function CreateProjectForm({
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
-          <Button type="submit" pending={submit.pending} pendingLabel="Creating…">
+          <Button
+            type="submit"
+            pending={submit.pending}
+            pendingLabel="Creating…"
+          >
             Create project
           </Button>
         </div>
         <div className="sm:col-span-2">
-          <ErrorNotice error={submit.error?.status === 401 ? null : submit.error} />
+          <ErrorNotice
+            error={submit.error?.status === 401 ? null : submit.error}
+          />
         </div>
       </form>
     </Card>

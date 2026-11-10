@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { ApiError } from '@/lib/api-client';
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ApiError } from "@/lib/api-client";
 
 /**
  * Runs an async action at most once at a time. A ref guards against double
  * clicks that land before React re-renders the disabled button.
  */
-export function useSubmit<A extends unknown[], R>(action: (...args: A) => Promise<R>) {
+export function useSubmit<A extends unknown[], R>(
+  action: (...args: A) => Promise<R>,
+) {
   const inFlight = useRef(false);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<ApiError | null>(null);
@@ -38,8 +40,8 @@ export function useSubmit<A extends unknown[], R>(action: (...args: A) => Promis
 export function toApiError(err: unknown): ApiError {
   if (err instanceof ApiError) return err;
   return new ApiError(0, {
-    code: 'UNEXPECTED',
-    message: err instanceof Error ? err.message : 'Something went wrong.',
+    code: "UNEXPECTED",
+    message: err instanceof Error ? err.message : "Something went wrong.",
   });
 }
 
@@ -58,7 +60,7 @@ export function useAuthRedirect(error: ApiError | null) {
  * Text state that survives a reload of this tab (sessionStorage), so pasted
  * scope and conversation text is not lost after a failure or refresh.
  */
-export function useDraft(key: string, initial = '') {
+export function useDraft(key: string, initial = "") {
   const storageKey = `scopepay.draft.${key}`;
   const [value, setValue] = useState(initial);
 
@@ -126,7 +128,12 @@ export function useBoundedPolling(
       await checkRef.current();
     } finally {
       running.current = false;
-      setState((s) => ({ ...s, checking: false, checks: s.checks + 1, lastCheckedAt: new Date() }));
+      setState((s) => ({
+        ...s,
+        checking: false,
+        checks: s.checks + 1,
+        lastCheckedAt: new Date(),
+      }));
     }
   }, []);
 

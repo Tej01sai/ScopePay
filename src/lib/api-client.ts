@@ -7,47 +7,26 @@ import type {
   Invoice,
   Project,
   Proposal,
-  ProposalItemInput,
-} from '@/shared/contracts';
+  CreateProjectRequest,
+  CreateProposalRequest,
+  UpdateProposalRequest,
+  GetProjectResponse,
+  ApproveProposalResponse,
+  GetClientProposalResponse,
+} from "@/shared/contracts";
 
-export const isMockMode = process.env.NEXT_PUBLIC_USE_MOCKS === 'true';
+export const isMockMode = process.env.NEXT_PUBLIC_USE_MOCKS === "true";
 
 // ---- Request/response shapes from the endpoint agreement -------------------
 
-export type CreateProjectRequest = {
-  title: string;
-  clientName: string;
-  scopeText: string;
-  hourlyRateCents: number;
-  currency: 'USD';
-};
-
-export type ProjectDetail = {
-  project: Project;
-  analyses: Analysis[];
-  proposals: Proposal[];
-  invoices: Invoice[];
-};
-
-export type CreateProposalRequest = {
-  analysisId: string;
-  findingIds: string[];
-  title: string;
-  items: ProposalItemInput[];
-};
-
-export type UpdateProposalRequest = {
-  title: string;
-  items: ProposalItemInput[];
-};
-
-export type ApproveProposalResult = { proposal: Proposal; approvalUrl: string };
-
-export type ClientProposalView = {
-  proposal: Proposal;
-  projectTitle: string;
-  invoice: Invoice | null;
-};
+export type {
+  CreateProjectRequest,
+  CreateProposalRequest,
+  UpdateProposalRequest,
+} from "@/shared/contracts";
+export type ProjectDetail = GetProjectResponse;
+export type ApproveProposalResult = ApproveProposalResponse;
+export type ClientProposalView = GetClientProposalResponse;
 
 // ---- Errors -----------------------------------------------------------------
 
@@ -64,7 +43,7 @@ export class ApiError extends Error {
 
   constructor(status: number, body: ApiErrorBody) {
     super(body.message);
-    this.name = 'ApiError';
+    this.name = "ApiError";
     this.status = status;
     this.code = body.code;
     this.fieldErrors = body.fieldErrors ?? {};
@@ -72,17 +51,17 @@ export class ApiError extends Error {
 }
 
 const statusMessages: Record<number, string> = {
-  400: 'Some fields need attention.',
-  401: 'Your session has expired. Sign in again.',
-  403: 'You do not have access to this.',
-  404: 'Not found.',
-  409: 'This action is not allowed in the current state. Refresh and try again.',
-  502: 'An upstream provider failed. Try again shortly.',
+  400: "Some fields need attention.",
+  401: "Your session has expired. Sign in again.",
+  403: "You do not have access to this.",
+  404: "Not found.",
+  409: "This action is not allowed in the current state. Refresh and try again.",
+  502: "An upstream provider failed. Try again shortly.",
 };
 
 // ---- Transport ----------------------------------------------------------------
 
-export type HttpMethod = 'GET' | 'POST' | 'PATCH';
+export type HttpMethod = "GET" | "POST" | "PATCH";
 
 export type TransportRequest = {
   method: HttpMethod;
@@ -102,18 +81,19 @@ const httpTransport: Transport = async ({ method, path, body, headers }) => {
     res = await fetch(`/api${path}`, {
       method,
       headers: {
-        Accept: 'application/json',
-        ...(body === undefined ? {} : { 'Content-Type': 'application/json' }),
+        Accept: "application/json",
+        ...(body === undefined ? {} : { "Content-Type": "application/json" }),
         ...headers,
       },
       body: body === undefined ? undefined : JSON.stringify(body),
-      credentials: 'same-origin',
-      cache: 'no-store',
+      credentials: "same-origin",
+      cache: "no-store",
     });
   } catch {
     throw new ApiError(0, {
-      code: 'NETWORK_ERROR',
-      message: 'Could not reach the ScopePay server. Check your connection and try again.',
+      code: "NETWORK_ERROR",
+      message:
+        "Could not reach the ScopePay server. Check your connection and try again.",
     });
   }
   const text = await res.text();
@@ -129,14 +109,14 @@ const httpTransport: Transport = async ({ method, path, body, headers }) => {
 };
 
 const mockTransport: Transport = async (req) => {
-  const { handleMockRequest } = await import('@/mocks/server');
+  const { handleMockRequest } = await import("@/mocks/server");
   return handleMockRequest(req);
 };
 
 const transport: Transport = isMockMode ? mockTransport : httpTransport;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
+  return typeof value === "object" && value !== null;
 }
 
 async function request<T>(req: TransportRequest): Promise<T> {
@@ -144,9 +124,9 @@ async function request<T>(req: TransportRequest): Promise<T> {
   if (status < 200 || status >= 300) {
     const err = isRecord(json) && isRecord(json.error) ? json.error : null;
     throw new ApiError(status, {
-      code: typeof err?.code === 'string' ? err.code : `HTTP_${status}`,
+      code: typeof err?.code === "string" ? err.code : `HTTP_${status}`,
       message:
-        typeof err?.message === 'string'
+        typeof err?.message === "string"
           ? err.message
           : (statusMessages[status] ?? `Request failed (${status}).`),
       fieldErrors: isRecord(err?.fieldErrors)
@@ -154,10 +134,10 @@ async function request<T>(req: TransportRequest): Promise<T> {
         : undefined,
     });
   }
-  if (!isRecord(json) || !('data' in json)) {
+  if (!isRecord(json) || !("data" in json)) {
     throw new ApiError(status, {
-      code: 'BAD_RESPONSE',
-      message: 'The server returned an unexpected response.',
+      code: "BAD_RESPONSE",
+      message: "The server returned an unexpected response.",
     });
   }
   return json.data as T;
@@ -171,71 +151,78 @@ const enc = encodeURIComponent;
 export const api = {
   createDemoSession: (accessSecret: string) =>
     request<{ authenticated: true }>({
-      method: 'POST',
-      path: '/demo-session',
+      method: "POST",
+      path: "/demo-session",
       body: { accessSecret },
     }),
 
-  listProjects: () => request<Project[]>({ method: 'GET', path: '/projects' }),
+  listProjects: () => request<Project[]>({ method: "GET", path: "/projects" }),
 
   createProject: (input: CreateProjectRequest) =>
-    request<Project>({ method: 'POST', path: '/projects', body: input }),
+    request<Project>({ method: "POST", path: "/projects", body: input }),
 
   getProject: (projectId: string) =>
-    request<ProjectDetail>({ method: 'GET', path: `/projects/${enc(projectId)}` }),
+    request<ProjectDetail>({
+      method: "GET",
+      path: `/projects/${enc(projectId)}`,
+    }),
 
   analyzeConversation: (projectId: string, conversationText: string) =>
     request<Analysis>({
-      method: 'POST',
+      method: "POST",
       path: `/projects/${enc(projectId)}/analyses`,
       body: { conversationText },
     }),
 
   createProposal: (projectId: string, input: CreateProposalRequest) =>
     request<Proposal>({
-      method: 'POST',
+      method: "POST",
       path: `/projects/${enc(projectId)}/proposals`,
       body: input,
     }),
 
   updateProposal: (proposalId: string, input: UpdateProposalRequest) =>
     request<Proposal>({
-      method: 'PATCH',
+      method: "PATCH",
       path: `/proposals/${enc(proposalId)}`,
       body: input,
     }),
 
   approveProposal: (proposalId: string) =>
     request<ApproveProposalResult>({
-      method: 'POST',
+      method: "POST",
       path: `/proposals/${enc(proposalId)}/approve`,
     }),
 
-  createInvoice: (proposalId: string, buyerEmail: string, idempotencyKey: string) =>
+  createInvoice: (
+    proposalId: string,
+    buyerEmail: string,
+    idempotencyKey: string,
+  ) =>
     request<Invoice>({
-      method: 'POST',
+      method: "POST",
       path: `/proposals/${enc(proposalId)}/invoice`,
       body: { buyerEmail },
-      headers: { 'Idempotency-Key': idempotencyKey },
+      headers: { "Idempotency-Key": idempotencyKey },
     }),
 
   getInvoice: (proposalId: string) =>
     request<Invoice | null>({
-      method: 'GET',
+      method: "GET",
       path: `/proposals/${enc(proposalId)}/invoice`,
     }),
 
   getClientProposal: (token: string) =>
     request<ClientProposalView>({
-      method: 'GET',
-      path: '/client/proposal',
+      method: "GET",
+      path: "/client/proposal",
       headers: bearer(token),
     }),
 
   acceptAsClient: (token: string) =>
     request<Proposal>({
-      method: 'POST',
-      path: '/client/accept',
+      method: "POST",
+      path: "/client/accept",
       body: { accepted: true },
       headers: bearer(token),
     }),

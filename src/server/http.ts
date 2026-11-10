@@ -23,6 +23,16 @@ export async function handle(work: () => Promise<Response>): Promise<Response> {
   try {
     return await work();
   } catch (error) {
+    if (!(error instanceof ApiFailure)) {
+      const code =
+        error && typeof error === "object" && "code" in error
+          ? String(error.code)
+          : "UNKNOWN";
+      console.error("ScopePay request failed", {
+        code: /^P\d{4}$/.test(code) ? code : "UNKNOWN",
+        type: error instanceof Error ? error.name : "Unknown",
+      });
+    }
     const failure =
       error instanceof ApiFailure
         ? error
